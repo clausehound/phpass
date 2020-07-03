@@ -8,6 +8,7 @@ pub enum Error {
     InvalidPasses(Option<char>),
     DecodeError(base64::DecodeError),
     CopyDecoded(std::array::TryFromSliceError),
+    VerificationError,
 }
 
 impl std::error::Error for Error {}
@@ -30,6 +31,7 @@ impl fmt::Display for Error {
             Error::OldWPFormat => write!(f, "Old WP one-pass md5 encoding not supported"),
             Error::InvalidPasses(c) => write!(f, "Found invalid character for passes: {:?}", c),
             Error::InvalidId(s) => write!(f, "Found invalid ID set in crypto: {:?}", s),
+            Error::VerificationError => write!(f, "Calculated hash does not match checksum"),
             Error::DecodeError(e) => e.fmt(f),
             Error::CopyDecoded(e) => e.fmt(f),
         }

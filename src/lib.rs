@@ -9,16 +9,12 @@ mod error;
 use error::Error;
 use base64;
 use md5;
-use std::{
-    convert::TryInto,
-    str::FromStr,
-};
+use std::convert::{TryFrom, TryInto};
 
-// Mostly a convenience set of fields around slices of the ph-pass hash
 #[derive(Debug)]
-pub struct PhPass {
+pub struct PhPass<'a> {
     passes: usize,
-    salt: [u8; 8],
+    salt: &'a str,
     // This will always match 16-bytes, however long it's encoded,
     // because that's how big an MD5 sum is
     hash: [u8; 16],
@@ -27,11 +23,11 @@ pub struct PhPass {
 // It'd be nice if the base64 crate gave me access to this.
 const CRYPT: &str = r"./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
-impl FromStr for PhPass {
+impl<'a> TryFrom<&'a str> for PhPass<'a> {
     // TODO Make a better error
-    type Err = Error;
+    type Error = Error;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn try_from(s: &'a str) -> Result<Self, Self::Error> {
         // TODO: For full old-WordPress support, allow 32-bit hashes
         if s.len() < 34 {
             return Err(Error::OldWPFormat);
@@ -52,7 +48,7 @@ impl FromStr for PhPass {
                 .find(passes.ok_or(Error::InvalidPasses(passes))?)
                 .ok_or(Error::InvalidPasses(passes))?;
 
-        // We pad by 0s, encoded as ., because that's how phpass does it
+        // We pad by 0s, encoded as .
         let encoded = &s[12..];
         let len = encoded.len();
         let hash = base64::decode_config(
@@ -64,8 +60,7 @@ impl FromStr for PhPass {
             base64::CRYPT,
         )?
         .iter()
-        // Then those backwards-fed inputs need their outputs reversed,
-        // because the people who wrote WP don't know what endian means
+        // Then those backwards-fed inputs need their outputs reversed.
         .rev()
         .take(16)
         .copied()
@@ -75,20 +70,24 @@ impl FromStr for PhPass {
 
         Ok(Self {
             passes,
-            salt: (s[4..12].as_bytes()).try_into()?,
+            salt: &s[4..12],
             hash,
         })
     }
 }
 
-impl PhPass {
-   pub fn verify<T: AsRef<[u8]>>(&self, pass: T) -> bool {
+impl PhPass<'_> {
+   pub fn verify<T: AsRef<[u8]>>(&self, pass: T) -> Result<(), Error> {
         let pass = pass.as_ref();
-        let salt = self.salt;
-        let checksum = (0..self.passes).fold(md5::compute([&salt, pass].concat()), |a, _| {
+        let salt = self.salt.as_bytes();
+        let checksum = (0..self.passes).fold(md5::compute([salt, pass].concat()), |a, _| {
             md5::compute([&a.0, pass].concat())
         });
 
-        self.hash == checksum.0
+        if self.hash == checksum.0 {
+            Ok(())
+        } else {
+            Err(Error::VerificationError)
+        }
     }
 }
