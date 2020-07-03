@@ -3,8 +3,13 @@ name = "phpass"
 version = "0.1.0"
 authors = ["Joshua Koudys <jkoudys@gmail.com>"]
 edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+license = "MIT"
+description = "PHPass, the WordPress password hasher, re-implemented in rust"
+homepage = "https://github.com/jkoudys/phpass"
+repository = "https://github.com/jkoudys/phpass"
+readme = "README.md"
+documentation = "https://github.com/jkoudys/phpass"
+keywords = ["wordpress", "phpass", "password", "salt", "hash"]
 
 [dependencies]
 md5 = "^0.7"
