@@ -1,4 +1,4 @@
-// Originally based on the hacky phpass, but they seemed to be
+// Originally based on phpass, but they seemed to be
 // imitating the non-standard FreeBSD multipass md5, as described:
 // https://docs.rs/pwhash/0.3.0/pwhash/md5_crypt/index.html
 // except instead of:
@@ -24,7 +24,6 @@ pub struct PhPass<'a> {
 const CRYPT: &str = r"./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
 impl<'a> TryFrom<&'a str> for PhPass<'a> {
-    // TODO Make a better error
     type Error = Error;
 
     fn try_from(s: &'a str) -> Result<Self, Self::Error> {
