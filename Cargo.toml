@@ -5,10 +5,10 @@ authors = ["Joshua Koudys <jkoudys@gmail.com>"]
 edition = "2018"
 license = "MIT"
 description = "PHPass, the WordPress password hasher, re-implemented in rust"
-homepage = "https://github.com/jkoudys/phpass"
-repository = "https://github.com/jkoudys/phpass"
+homepage = "https://github.com/clausehound/phpass"
+repository = "https://github.com/clausehound/phpass"
 readme = "README.md"
-documentation = "https://github.com/jkoudys/phpass"
+documentation = "https://github.com/clausehound/phpass"
 keywords = ["wordpress", "phpass", "password", "salt", "hash"]
 
 [dependencies]
