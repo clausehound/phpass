@@ -5,9 +5,9 @@
 // $1${salt}${checksum}
 // We look like:
 // $P$[passes; 1][salt; 8]{checksum}
-mod error;
+pub mod error;
+use error::Error;
 use base64;
-pub use error::Error;
 use md5;
 use std::convert::{TryFrom, TryInto};
 
@@ -77,7 +77,7 @@ impl<'a> TryFrom<&'a str> for PhPass<'a> {
 }
 
 impl PhPass<'_> {
-    pub fn verify<T: AsRef<[u8]>>(&self, pass: T) -> Result<(), Error> {
+   pub fn verify<T: AsRef<[u8]>>(&self, pass: T) -> Result<(), Error> {
         let pass = pass.as_ref();
         let salt = self.salt.as_bytes();
         let checksum = (0..self.passes).fold(md5::compute([salt, pass].concat()), |a, _| {
