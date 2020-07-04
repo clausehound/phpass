@@ -10,7 +10,7 @@ We often don't know which ideas and projects will become successful when we make
 It's also considerably faster than the native PHP version, so could be used in quickly auditing your WordPress user database, to flag and disable accounts with insecure (easy to guess) passwords.
 
 ## How
-This crate provides the basics to decode the PhPas checksum and salt from the standard WordPress hash string, and verify against a cleartext password.
+This crate provides the basics to decode the PhPass checksum and salt from the standard WordPress hash string, and verify against a cleartext password.
 
 TODO: proper rustdoc and an examples dir
 
