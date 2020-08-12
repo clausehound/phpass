@@ -23,7 +23,7 @@ TODO: proper rustdoc and an examples dir
         .await?
         .first_exec(
             "SELECT user_pass FROM wp_users WHERE user_email = ?;",
-            vec![&auth_data.email],
+            (&auth_data.email,)
         )
         .await?
         .1
