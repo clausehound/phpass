@@ -30,5 +30,5 @@ TODO: proper rustdoc and an examples dir
         .ok_or(MyError)?;
 
     // Return on failed verify through the beauty of ?
-    PhPass::try_from(hash.as_ref())?.verify(&auth_data.password)?;
+    PhPass::try_from(hash)?.verify(&auth_data.password)?;
 ```
