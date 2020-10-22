@@ -122,13 +122,22 @@ mod tests {
     }
 }
 
+fn checksum<T: AsRef<[u8]>, U: AsRef<[u8]>>(pass: T, salt: U, passes: usize) -> [u8; 16] {
+    let pass = pass.as_ref();
+    let salt = salt.as_ref();
+    let checksum = (0..1 << passes).fold(md5::compute([salt, pass].concat()), |a, _| {
+        md5::compute([&a.0, pass].concat())
+    });
+    checksum.0
+}
+
 impl PhPass<'_> {
     // Make a new PhPass with a random salt
     pub fn new<'a, T: AsRef<[u8]>>(pass: T) -> PhPass<'a> {
         let mut rng = thread_rng();
         let passes = 13;
         let salt = base64::encode(rng.gen::<[u8; 6]>());
-        let hash = Self::checksum(&pass, &salt, passes);
+        let hash = checksum(&pass, &salt, passes);
 
         PhPass {
             passes,
@@ -137,17 +146,8 @@ impl PhPass<'_> {
         }
     }
 
-    fn checksum<T: AsRef<[u8]>, U: AsRef<[u8]>>(pass: T, salt: U, passes: usize) -> [u8; 16] {
-        let pass = pass.as_ref();
-        let salt = salt.as_ref();
-        let checksum = (0..1 << passes).fold(md5::compute([salt, pass].concat()), |a, _| {
-            md5::compute([&a.0, pass].concat())
-        });
-        checksum.0
-    }
-
     pub fn verify<T: AsRef<[u8]>>(&self, pass: T) -> Result<(), Error> {
-        if self.hash == Self::checksum(pass, self.salt.as_ref(), self.passes) {
+        if self.hash == checksum(pass, self.salt.as_ref(), self.passes) {
             Ok(())
         } else {
             Err(Error::VerificationError)
