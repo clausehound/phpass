@@ -32,3 +32,11 @@ TODO: proper rustdoc and an examples dir
     // Return on failed verify through the beauty of ?
     PhPass::try_from(hash)?.verify(&auth_data.password)?;
 ```
+
+Making a new password with a random hash:
+```rs
+ let phpass = PhPass::new("swordfish");
+
+ // Display or to_string() will generate the full hash string
+ println!("{}", phpass);
+```
