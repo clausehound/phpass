@@ -7,14 +7,16 @@
 // $P$[passes; 1][salt; 8]{checksum}
 pub mod error;
 use error::Error;
-use base64;
-use md5;
+use rand::{thread_rng, Rng};
+use std::borrow::Cow;
 use std::convert::{TryFrom, TryInto};
+use std::fmt;
 
 #[derive(Debug)]
 pub struct PhPass<'a> {
+    // Passes as a power of 2**passes
     passes: usize,
-    salt: &'a str,
+    salt: Cow<'a, str>,
     // This will always match 16-bytes, however long it's encoded,
     // because that's how big an MD5 sum is
     hash: [u8; 16],
@@ -42,10 +44,9 @@ impl<'a> TryFrom<&'a str> for PhPass<'a> {
         // TODO: access the table directly and avoid this overhead,
         // since it's only 1 character
         let passes = s.chars().nth(3);
-        let passes = 1
-            << CRYPT
-                .find(passes.ok_or(Error::InvalidPasses(passes))?)
-                .ok_or(Error::InvalidPasses(passes))?;
+        let passes = CRYPT
+            .find(passes.ok_or(Error::InvalidPasses(passes))?)
+            .ok_or(Error::InvalidPasses(passes))?;
 
         // We pad by 0s, encoded as .
         let encoded = &s[12..];
@@ -69,21 +70,84 @@ impl<'a> TryFrom<&'a str> for PhPass<'a> {
 
         Ok(Self {
             passes,
-            salt: &s[4..12],
+            salt: Cow::Borrowed(&s[4..12]),
             hash,
         })
     }
 }
 
+impl fmt::Display for PhPass<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "$P${}{}{}",
+            &CRYPT[self.passes..self.passes + 1],
+            self.salt,
+            base64::encode_config(&self.hash, base64::CRYPT),
+        )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_round_trip() {
+        let phpass = PhPass::try_from(PhPass::new("hello")).unwrap();
+        assert!(
+            phpass.verify("hello").is_ok(),
+            "Failed to verify random-salt password hash"
+        )
+    }
+
+    #[test]
+    fn test_verify_parse() {
+        let phpass = PhPass::try_from("$P$BgUdq1RzEBYd9Tm/uZC7mz/l5F.x4N1").unwrap();
+
+        assert!(
+            phpass.verify("development").is_ok(),
+            "Failed to verify parsed password hash"
+        )
+    }
+
+    #[test]
+    fn test_verify_new() {
+        let phpass = PhPass::new("world!");
+
+        assert!(
+            phpass.verify("world!").is_ok(),
+            "Failed to verify random-salt password hash"
+        )
+    }
+}
+
 impl PhPass<'_> {
-   pub fn verify<T: AsRef<[u8]>>(&self, pass: T) -> Result<(), Error> {
+    // Make a new PhPass with a random salt
+    pub fn new<'a, T: AsRef<[u8]>>(pass: T) -> PhPass<'a> {
+        let mut rng = thread_rng();
+        let passes = 13;
+        let salt = base64::encode(rng.gen::<[u8; 6]>());
+        let hash = Self::checksum(&pass, &salt, passes);
+
+        PhPass {
+            passes,
+            salt: Cow::Owned(salt),
+            hash,
+        }
+    }
+
+    fn checksum<T: AsRef<[u8]>, U: AsRef<[u8]>>(pass: T, salt: U, passes: usize) -> [u8; 16] {
         let pass = pass.as_ref();
-        let salt = self.salt.as_bytes();
-        let checksum = (0..self.passes).fold(md5::compute([salt, pass].concat()), |a, _| {
+        let salt = salt.as_ref();
+        let checksum = (0..1 << passes).fold(md5::compute([salt, pass].concat()), |a, _| {
             md5::compute([&a.0, pass].concat())
         });
+        checksum.0
+    }
 
-        if self.hash == checksum.0 {
+    pub fn verify<T: AsRef<[u8]>>(&self, pass: T) -> Result<(), Error> {
+        if self.hash == Self::checksum(pass, self.salt.as_ref(), self.passes) {
             Ok(())
         } else {
             Err(Error::VerificationError)

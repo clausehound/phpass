@@ -1,4 +1,3 @@
-use base64;
 use std::{array, fmt};
 
 #[derive(Debug)]

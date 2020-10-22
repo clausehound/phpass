@@ -14,3 +14,4 @@ keywords = ["wordpress", "phpass", "password", "salt", "hash"]
 [dependencies]
 md5 = "^0.7"
 base64 = "^0.12"
+rand = "0.7.3"
