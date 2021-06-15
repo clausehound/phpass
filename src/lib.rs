@@ -78,12 +78,42 @@ impl<'a> TryFrom<&'a str> for PhPass<'a> {
 
 impl fmt::Display for PhPass<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let s = base64::encode_config([0, 0, self.hash[15]], base64::CRYPT)
+            .chars()
+            .rev()
+            .take(2)
+            .collect::<String>();
+        let a = base64::encode_config([self.hash[14], self.hash[13], self.hash[12]], base64::CRYPT)
+            .chars()
+            .rev()
+            .collect::<String>();
+        let b = base64::encode_config([self.hash[11], self.hash[10], self.hash[9]], base64::CRYPT)
+            .chars()
+            .rev()
+            .collect::<String>();
+        let c = base64::encode_config([self.hash[8], self.hash[7], self.hash[6]], base64::CRYPT)
+            .chars()
+            .rev()
+            .collect::<String>();
+        let d = base64::encode_config([self.hash[5], self.hash[4], self.hash[3]], base64::CRYPT)
+            .chars()
+            .rev()
+            .collect::<String>();
+        let e = base64::encode_config([self.hash[2], self.hash[1], self.hash[0]], base64::CRYPT)
+            .chars()
+            .rev()
+            .collect::<String>();
         write!(
             f,
-            "$P${}{}{}",
+            "$P${}{}{}{}{}{}{}{}",
             &CRYPT[self.passes..self.passes + 1],
             self.salt,
-            base64::encode_config(&self.hash, base64::CRYPT),
+            e,
+            d,
+            c,
+            b,
+            a,
+            s
         )
     }
 }
@@ -94,7 +124,8 @@ mod tests {
 
     #[test]
     fn test_round_trip() {
-        let phpass = PhPass::try_from(PhPass::new("hello")).unwrap();
+        let random_salt = PhPass::new("hello").to_string();
+        let phpass = PhPass::try_from(random_salt.as_ref()).unwrap();
         assert!(
             phpass.verify("hello").is_ok(),
             "Failed to verify random-salt password hash"
@@ -104,6 +135,8 @@ mod tests {
     #[test]
     fn test_verify_parse() {
         let phpass = PhPass::try_from("$P$BgUdq1RzEBYd9Tm/uZC7mz/l5F.x4N1").unwrap();
+        println!("in : $P$BgUdq1RzEBYd9Tm/uZC7mz/l5F.x4N1");
+        println!("out: {}", phpass);
 
         assert!(
             phpass.verify("development").is_ok(),
