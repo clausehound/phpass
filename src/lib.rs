@@ -78,42 +78,39 @@ impl<'a> TryFrom<&'a str> for PhPass<'a> {
 
 impl fmt::Display for PhPass<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let s = base64::encode_config([0, 0, self.hash[15]], base64::CRYPT)
-            .chars()
-            .rev()
-            .take(2)
+
+        let iter = self.hash.chunks_exact(3);
+        // Remained must have something in 0, maybe something in 1, no 2
+        let remain = iter.remainder();
+        let end =
+            base64::encode_config([0, 0, remain[0]], base64::CRYPT)
+                .chars()
+                .rev()
+                // Get rid of trailing 0s
+                .take(2)
+                .collect::<String>();
+
+        let mapped = iter
+            .map(|chunk| {
+                // To work around the wacky ltr on streaming the string, but
+                // rtl for reading the bits from the 24-bit sequence, we'll
+                base64::encode_config(
+                    chunk.iter().rev().copied().collect::<Vec<_>>(),
+                    base64::CRYPT,
+                )
+                .chars()
+                .rev()
+                .collect::<String>()
+            })
+            .chain(std::iter::once(end))
             .collect::<String>();
-        let a = base64::encode_config([self.hash[14], self.hash[13], self.hash[12]], base64::CRYPT)
-            .chars()
-            .rev()
-            .collect::<String>();
-        let b = base64::encode_config([self.hash[11], self.hash[10], self.hash[9]], base64::CRYPT)
-            .chars()
-            .rev()
-            .collect::<String>();
-        let c = base64::encode_config([self.hash[8], self.hash[7], self.hash[6]], base64::CRYPT)
-            .chars()
-            .rev()
-            .collect::<String>();
-        let d = base64::encode_config([self.hash[5], self.hash[4], self.hash[3]], base64::CRYPT)
-            .chars()
-            .rev()
-            .collect::<String>();
-        let e = base64::encode_config([self.hash[2], self.hash[1], self.hash[0]], base64::CRYPT)
-            .chars()
-            .rev()
-            .collect::<String>();
+
         write!(
             f,
-            "$P${}{}{}{}{}{}{}{}",
+            "$P${}{}{}",
             &CRYPT[self.passes..self.passes + 1],
             self.salt,
-            e,
-            d,
-            c,
-            b,
-            a,
-            s
+            mapped
         )
     }
 }
@@ -135,8 +132,6 @@ mod tests {
     #[test]
     fn test_verify_parse() {
         let phpass = PhPass::try_from("$P$BgUdq1RzEBYd9Tm/uZC7mz/l5F.x4N1").unwrap();
-        println!("in : $P$BgUdq1RzEBYd9Tm/uZC7mz/l5F.x4N1");
-        println!("out: {}", phpass);
 
         assert!(
             phpass.verify("development").is_ok(),
