@@ -78,17 +78,14 @@ impl<'a> TryFrom<&'a str> for PhPass<'a> {
 
 impl fmt::Display for PhPass<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-
         let iter = self.hash.chunks_exact(3);
-        // Remained must have something in 0, maybe something in 1, no 2
-        let remain = iter.remainder();
-        let end =
-            base64::encode_config([0, 0, remain[0]], base64::CRYPT)
-                .chars()
-                .rev()
-                // Get rid of trailing 0s
-                .take(2)
-                .collect::<String>();
+        // Remain is a tiny nibble, since we're encoding a 16-byte hash
+        let end = base64::encode_config([0, 0, iter.remainder()[0]], base64::CRYPT)
+            .chars()
+            .rev()
+            // Get rid of trailing 0s
+            .take(2)
+            .collect::<String>();
 
         let mapped = iter
             .map(|chunk| {
