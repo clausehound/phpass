@@ -1,8 +1,8 @@
 [package]
 name = "phpass"
-version = "0.1.3"
+version = "0.1.4"
 authors = ["Joshua Koudys <jkoudys@gmail.com>"]
-edition = "2018"
+edition = "2021"
 license = "MIT"
 description = "PHPass, the WordPress password hasher, re-implemented in rust"
 homepage = "https://github.com/clausehound/phpass"
@@ -12,6 +12,6 @@ documentation = "https://github.com/clausehound/phpass"
 keywords = ["wordpress", "phpass", "password", "salt", "hash"]
 
 [dependencies]
+base64-compat = "1.0.0"
 md5 = "^0.7"
-base64 = "^0.12"
-rand = "0.7.3"
+rand = "0.8.5"

@@ -52,7 +52,7 @@ impl<'a> TryFrom<&'a str> for PhPass<'a> {
         let encoded = &s[12..];
         let len = encoded.len();
         let hash = base64::decode_config(
-            std::iter::repeat(b'.')
+            &std::iter::repeat(b'.')
                 // Base64 encodes on 3-byte boundaries
                 .take(3 - len % 3)
                 .chain(encoded.bytes().rev())
@@ -80,7 +80,7 @@ impl fmt::Display for PhPass<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let iter = self.hash.chunks_exact(3);
         // Remain is a tiny nibble, since we're encoding a 16-byte hash
-        let end = base64::encode_config([0, 0, iter.remainder()[0]], base64::CRYPT)
+        let end = base64::encode_config(&[0, 0, iter.remainder()[0]], base64::CRYPT)
             .chars()
             .rev()
             // Get rid of trailing 0s
@@ -92,7 +92,7 @@ impl fmt::Display for PhPass<'_> {
                 // To work around the wacky ltr on streaming the string, but
                 // rtl for reading the bits from the 24-bit sequence, we'll
                 base64::encode_config(
-                    chunk.iter().rev().copied().collect::<Vec<_>>(),
+                    &chunk.iter().rev().copied().collect::<Vec<_>>(),
                     base64::CRYPT,
                 )
                 .chars()
@@ -161,7 +161,7 @@ impl PhPass<'_> {
     pub fn new<'a, T: AsRef<[u8]>>(pass: T) -> PhPass<'a> {
         let mut rng = thread_rng();
         let passes = 13;
-        let salt = base64::encode(rng.gen::<[u8; 6]>());
+        let salt = base64::encode(&rng.gen::<[u8; 6]>());
         let hash = checksum(&pass, &salt, passes);
 
         PhPass {
